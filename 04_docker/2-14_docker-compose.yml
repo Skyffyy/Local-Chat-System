@@ -1,29 +1,41 @@
 version: "3.9"
 
 services:
+  database:
+    image: postgres:15
+    container_name: 2-14_database
+    environment:
+      POSTGRES_USER: chat_user
+      POSTGRES_PASSWORD: chat_password
+      POSTGRES_DB: local_chat_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../03_database/2-14_schema.sql:/docker-entrypoint-initdb.d/1_schema.sql
+      - ../03_database/2-14_seed_data.sql:/docker-entrypoint-initdb.d/2_seed_data.sql
+
+  backend:
+    image: python:3.11-slim
+    container_name: 2-14_backend
+    volumes:
+      - ../02_source_code:/app
+    working_dir: /app
+    command: sh -c "pip install -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - database
+
   app:
     image: nginx:latest
     container_name: 2-14_app
     ports:
       - "8080:80"
     volumes:
-      - ../02_source_code:/usr/share/nginx/html:ro
+      - ../02_source_code:/usr/share/nginx/html
     depends_on:
-      - database
-
-  database:
-    image: postgres:15
-    container_name: 2-14_database
-    environment:
-      POSTGRES_USER: student
-      POSTGRES_PASSWORD: student_password
-      POSTGRES_DB: practice_project
-    ports:
-      - "5432:5432"
-    volumes:
-      - ../03_database/2-14_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
-      - ../03_database/2-14_seed_data.sql:/docker-entrypoint-initdb.d/02_seed_data.sql:ro
-      - db_data:/var/lib/postgresql/data
+      - backend
 
 volumes:
-  db_data:
+  pgdata:

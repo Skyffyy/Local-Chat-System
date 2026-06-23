@@ -1,12 +1,47 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>2-14 - Local Chat System</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2-14 - Local Chat System</title>
+    <style>
+        /* Simple wireframe layout */
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; display: flex; height: 100vh; }
+        .sidebar { width: 250px; background: #f0f0f0; border-right: 1px solid #ccc; padding: 10px; }
+        .chat-area { flex: 1; display: flex; flex-direction: column; }
+        .messages { flex: 1; padding: 20px; background: #fff; overflow-y: auto; }
+        .input-area { padding: 10px; border-top: 1px solid #ccc; display: flex; }
+        .input-area input { flex: 1; padding: 10px; }
+        .input-area button { padding: 10px; }
+    </style>
 </head>
 <body>
-  <h1>2-14 - Local Chat System</h1>
-  <p>This is the starter page. Student must replace it with the real project implementation.</p>
+
+    <!-- Sidebar Wireframe -->
+    <div class="sidebar">
+        <h3>Rooms Layout</h3>
+        <ul>
+            <li># general</li>
+            <li># random</li>
+        </ul>
+        <hr>
+        <h3>Users Status</h3>
+        <ul>
+            <li>Active User</li>
+            <li>Admin (Admin)</li>
+        </ul>
+    </div>
+
+    <!-- Main Chat Wireframe -->
+    <div class="chat-area">
+        <div class="messages">
+            <p><strong>Admin:</strong> Welcome to Local Chat System! (Wireframe Draft)</p>
+        </div>
+        <div class="input-area">
+            <input type="text" placeholder="Type a message here..." disabled>
+            <button disabled>Send</button>
+        </div>
+    </div>
+
 </body>
 </html>

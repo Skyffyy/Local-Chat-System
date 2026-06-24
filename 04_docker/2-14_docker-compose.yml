@@ -24,6 +24,8 @@ services:
       - "8000:8000"
     depends_on:
       - database
+    environment:
+      DATABASE_URL: postgresql://chat_user:chat_password@database:5432/local_chat_db  
 
   app:
     image: nginx:latest

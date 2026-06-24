@@ -14,10 +14,12 @@ services:
       - ../03_database/2-14_seed_data.sql:/docker-entrypoint-initdb.d/2_seed_data.sql
 
   backend:
-    build:
-      context: ../02_source_code  # папка где лежит Dockerfile
-      dockerfile: Dockerfile
+    image: python:3.11-slim
     container_name: 2-14_backend
+    volumes:
+      - ../02_source_code:/app
+    working_dir: /app
+    command: sh -c "pip install --no-cache-dir -r requirements.txt && python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
     ports:
       - "8000:8000"
     depends_on:

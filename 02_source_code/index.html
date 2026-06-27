@@ -15,7 +15,6 @@
             color: #cdd6f4;
         }
 
-        /* Sidebar */
         .sidebar {
             width: 240px;
             background: #181825;
@@ -62,7 +61,6 @@
             background: #a6e3a1;
         }
 
-        /* Main chat area */
         .chat-area {
             flex: 1;
             display: flex;
@@ -77,6 +75,25 @@
             font-weight: bold;
             color: #cba6f7;
         }
+
+        .search-bar {
+            padding: 8px 20px;
+            border-bottom: 1px solid #313244;
+            display: none;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #45475a;
+            background: #313244;
+            color: #cdd6f4;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .search-bar input:focus { border-color: #cba6f7; }
 
         .messages {
             flex: 1;
@@ -114,7 +131,6 @@
             font-size: 14px;
         }
 
-        /* Input area */
         .input-area {
             padding: 14px 20px;
             border-top: 1px solid #313244;
@@ -148,11 +164,12 @@
 
         .input-area button:hover { background: #b4a0e0; }
 
-        /* Error message */
         .error { color: #f38ba8; font-size: 13px; padding: 6px 20px; }
 
-        /* Loading */
         .loading { color: #6c7086; font-size: 13px; padding: 10px 20px; }
+
+        /* Highlight search matches in messages */
+        .highlight { background: #f9e2af; color: #1e1e2e; border-radius: 3px; padding: 0 2px; }
     </style>
 </head>
 <body>
@@ -174,6 +191,9 @@
 
 <div class="chat-area">
     <div class="chat-header" id="chatHeader">Select a room</div>
+    <div class="search-bar" id="searchBar">
+        <input type="text" id="searchInput" placeholder="Search messages..." />
+    </div>
     <div class="messages" id="messages">
         <div class="empty-state">Select a room to start chatting</div>
     </div>
@@ -239,13 +259,16 @@
         currentRoomId = roomId;
         currentRoomName = roomName;
 
-        // Update active room highlight
         document.querySelectorAll(".room-list li").forEach(li => li.classList.remove("active"));
         element.classList.add("active");
 
         document.getElementById("chatHeader").textContent = "# " + roomName;
         document.getElementById("messageInput").disabled = false;
         document.getElementById("sendBtn").disabled = false;
+        document.getElementById("searchInput").value = "";
+
+        // Show search bar when a room is selected
+        document.getElementById("searchBar").style.display = "block";
 
         await loadMessages(roomId);
     }
@@ -275,7 +298,6 @@
                 container.appendChild(div);
             });
 
-            // Scroll to bottom
             container.scrollTop = container.scrollHeight;
         } catch (err) {
             console.error("Failed to load messages:", err);
@@ -283,13 +305,48 @@
         }
     }
 
+    // Search messages by keyword
+    document.getElementById("searchInput").addEventListener("input", async function() {
+        const q = this.value.trim();
+        if (!currentRoomId) return;
+
+        if (q === "") {
+            // If search is cleared reload all messages
+            await loadMessages(currentRoomId);
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API}/api/rooms/${currentRoomId}/messages/search?q=${encodeURIComponent(q)}`);
+            const messages = await res.json();
+            const container = document.getElementById("messages");
+
+            if (messages.length === 0) {
+                container.innerHTML = '<div class="empty-state">No messages found</div>';
+                return;
+            }
+
+            container.innerHTML = "";
+            messages.forEach(msg => {
+                const div = document.createElement("div");
+                div.className = "message";
+                div.innerHTML = `
+                    <div class="meta"><span>${msg.username || "Unknown"}</span> · ${new Date(msg.created_at).toLocaleTimeString()}</div>
+                    <p>${highlightText(escapeHtml(msg.message_text), escapeHtml(q))}</p>
+                `;
+                container.appendChild(div);
+            });
+        } catch (err) {
+            console.error("Search error:", err);
+        }
+    });
+
     // Send a new message
     async function sendMessage() {
         const input = document.getElementById("messageInput");
         const errorMsg = document.getElementById("errorMsg");
         const text = input.value.trim();
 
-        // Validate input
         if (!text) {
             showError("Message cannot be empty");
             return;
@@ -315,7 +372,6 @@
             }
 
             input.value = "";
-            // Reload messages after sending
             await loadMessages(currentRoomId);
         } catch (err) {
             console.error("Send error:", err);
@@ -341,6 +397,13 @@
         const div = document.createElement("div");
         div.appendChild(document.createTextNode(text));
         return div.innerHTML;
+    }
+
+    // Highlight search keyword in message text
+    function highlightText(text, keyword) {
+        if (!keyword) return text;
+        const regex = new RegExp(`(${keyword})`, "gi");
+        return text.replace(regex, '<span class="highlight">$1</span>');
     }
 
     // Init

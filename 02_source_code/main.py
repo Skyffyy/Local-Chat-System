@@ -96,6 +96,23 @@ async def delete_message(message_id: int, conn=Depends(get_db)):
     if result == "DELETE 0":
         raise HTTPException(status_code=404, detail="Message not found")
 
+# Search messages in a room by keyword
+@app.get("/api/rooms/{room_id}/messages/search")
+async def search_messages(room_id: int, q: str, conn=Depends(get_db)):
+    if not q.strip():
+        raise HTTPException(status_code=400, detail="Search query cannot be empty")
+    rows = await conn.fetch(
+        """
+        SELECT m.id, m.message_text, m.created_at,
+               u.username, u.role
+        FROM messages m
+        LEFT JOIN users u ON m.user_id = u.id
+        WHERE m.room_id = $1 AND m.message_text ILIKE $2
+        ORDER BY m.created_at ASC
+        """,
+        room_id, f"%{q}%"
+    )
+    return [dict(r) for r in rows]
 # --- Users ---
 
 @app.get("/api/users")

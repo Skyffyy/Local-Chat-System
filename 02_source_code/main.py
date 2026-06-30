@@ -38,6 +38,9 @@ class RoomCreate(BaseModel):
     description: Optional[str] = None
     is_private: bool = False
 
+class UserStatusUpdate(BaseModel):
+    status: str  # 'Active' or 'Banned'b    
+
 # --- Status ---
 
 @app.get("/api/status")
@@ -124,6 +127,20 @@ async def get_users(conn=Depends(get_db)):
 async def get_user(user_id: int, conn=Depends(get_db)):
     row = await conn.fetchrow(
         "SELECT id, username, role, status, created_at FROM users WHERE id = $1", user_id
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="User not found")
+    return dict(row)
+
+@app.patch("/api/users/{user_id}/status")
+async def update_user_status(user_id: int, payload: UserStatusUpdate, conn=Depends(get_db)):
+    # Only allow specific status values
+    if payload.status not in ("Active", "Banned"):
+        raise HTTPException(status_code=400, detail="Status must be 'Active' or 'Banned'")
+
+    row = await conn.fetchrow(
+        "UPDATE users SET status = $1 WHERE id = $2 RETURNING id, username, role, status, created_at",
+        payload.status, user_id
     )
     if not row:
         raise HTTPException(status_code=404, detail="User not found")

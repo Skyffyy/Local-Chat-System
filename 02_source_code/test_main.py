@@ -171,3 +171,25 @@ def test_get_user_not_found():
     response = client.get("/api/users/999")
     assert response.status_code == 404
     app.dependency_overrides.clear()
+
+
+def test_update_user_status():
+    from datetime import datetime
+    fake_user = {"id": 2, "username": "georgy", "role": "User", "status": "Banned", "created_at": datetime.now()}
+    set_db_override(make_mock_conn(fetchrow_result=fake_user))
+    response = client.patch("/api/users/2/status", json={"status": "Banned"})
+    assert response.status_code == 200
+    assert response.json()["status"] == "Banned"
+    app.dependency_overrides.clear()
+
+def test_update_user_status_invalid_value():
+    set_db_override(make_mock_conn())
+    response = client.patch("/api/users/2/status", json={"status": "Hacked"})
+    assert response.status_code == 400
+    app.dependency_overrides.clear()
+
+def test_update_user_status_not_found():
+    set_db_override(make_mock_conn(fetchrow_result=None))
+    response = client.patch("/api/users/999/status", json={"status": "Active"})
+    assert response.status_code == 404
+    app.dependency_overrides.clear()

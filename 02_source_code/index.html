@@ -246,7 +246,16 @@
             list.innerHTML = "";
             users.forEach(user => {
                 const li = document.createElement("li");
-                li.innerHTML = `<span class="user-dot"></span>${user.username} (${user.role})`;
+                li.innerHTML = `
+        <span class="user-dot" style="background: ${user.status === 'Banned' ? '#f38ba8' : '#a6e3a1'}"></span>
+        ${user.username} (${user.role})
+        <button onclick="toggleBan(${user.id}, '${user.status}')" 
+            style="margin-left:auto; padding:2px 8px; border-radius:4px; border:none; cursor:pointer;
+            background:${user.status === 'Banned' ? '#a6e3a1' : '#f38ba8'}; 
+            color:#1e1e2e; font-size:11px;">
+            ${user.status === 'Banned' ? 'Unban' : 'Ban'}
+        </button>
+`;
                 list.appendChild(li);
             });
         } catch (err) {
@@ -404,6 +413,27 @@
         if (!keyword) return text;
         const regex = new RegExp(`(${keyword})`, "gi");
         return text.replace(regex, '<span class="highlight">$1</span>');
+    }
+
+    // Ban or unban a user
+    async function toggleBan(userId, currentStatus) {
+        const newStatus = currentStatus === "Banned" ? "Active" : "Banned";
+        try {
+            const res = await fetch(`${API}/api/users/${userId}/status`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: newStatus })
+            });
+            if (!res.ok) {
+                showError("Failed to update user status");
+                return;
+            }
+        // Reload users list to show updated status
+        await loadUsers();
+    } catch (err) {
+        console.error("Ban error:", err);
+        showError("Could not connect to server");
+        }
     }
 
     // Init

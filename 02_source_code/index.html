@@ -190,6 +190,10 @@
 </div>    
 
 <div class="sidebar">
+    <div id="currentUserInfo" style="padding-bottom:8px; border-bottom:1px solid #313244; margin-bottom:8px; font-size:13px; color:#a6adc8;">
+    <span id="currentUserLabel"></span>
+    <button onclick="logout()" style="float:right; background:none; border:none; color:#f38ba8; cursor:pointer; font-size:12px;">Logout</button>
+</div>
     <div>
         <h2>Rooms</h2>
         <ul class="room-list" id="roomList">
@@ -482,6 +486,7 @@
             const user = await res.json();
             CURRENT_USER_ID = user.id;
             CURRENT_USERNAME = user.username;
+            document.getElementById("currentUserLabel").textContent = `Logged in as ${user.username} (${user.role})`;
 
             document.getElementById("loginScreen").style.display = "none";
             loadRooms();
@@ -491,6 +496,13 @@
             errorEl.textContent = "Could not connect to server";
             errorEl.style.display = "block";
         }
+    }
+
+    // Log out and reload the page to reset all state
+    function logout() {
+        CURRENT_USER_ID = null;
+        CURRENT_USERNAME = null;
+        location.reload();
     }
     
     // Init - wait for login before loading rooms/users

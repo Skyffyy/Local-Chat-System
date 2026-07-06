@@ -233,3 +233,22 @@ def test_login_banned_user():
     response = client.post("/api/login", json={"username": "georgy", "password": "georgy123"})
     assert response.status_code == 403
     app.dependency_overrides.clear()
+
+def test_search_messages():
+    from datetime import datetime
+    fake_messages = [
+        {"id": 1, "message_text": "Hello world", "created_at": datetime.now(), "username": "admin", "role": "Admin"},
+    ]
+    set_db_override(make_mock_conn(fetch_result=fake_messages))
+    response = client.get("/api/rooms/1/messages/search?q=hello")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert "Hello world" in data[0]["message_text"]
+    app.dependency_overrides.clear()
+
+def test_search_messages_empty_query():
+    set_db_override(make_mock_conn())
+    response = client.get("/api/rooms/1/messages/search?q=")
+    assert response.status_code == 400
+    app.dependency_overrides.clear()

@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from typing import Optional
 import asyncpg
 import os
+import hashlib
 
 app = FastAPI(title="2-14 Local Chat System API")
 
@@ -27,6 +28,10 @@ async def get_db():
     finally:
         await conn.close()
 
+# Simple password hashing using sha256 (student project - no need for bcrypt here)
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
+
 # --- Schemas ---
 
 class MessageCreate(BaseModel):
@@ -39,7 +44,11 @@ class RoomCreate(BaseModel):
     is_private: bool = False
 
 class UserStatusUpdate(BaseModel):
-    status: str  # 'Active' or 'Banned'b    
+    status: str  # 'Active' or 'Banned'
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
 
 # --- Status ---
 
@@ -116,6 +125,7 @@ async def search_messages(room_id: int, q: str, conn=Depends(get_db)):
         room_id, f"%{q}%"
     )
     return [dict(r) for r in rows]
+
 # --- Users ---
 
 @app.get("/api/users")
@@ -145,3 +155,24 @@ async def update_user_status(user_id: int, payload: UserStatusUpdate, conn=Depen
     if not row:
         raise HTTPException(status_code=404, detail="User not found")
     return dict(row)
+
+# --- Auth ---
+
+@app.post("/api/login")
+async def login(credentials: LoginRequest, conn=Depends(get_db)):
+    row = await conn.fetchrow(
+        "SELECT id, username, role, status, password_hash FROM users WHERE username = $1",
+        credentials.username
+    )
+
+    if not row:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
+    if row["status"] == "Banned":
+        raise HTTPException(status_code=403, detail="This account has been banned")
+
+    hashed_input = hash_password(credentials.password)
+    if hashed_input != row["password_hash"]:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
+    return {"id": row["id"], "username": row["username"], "role": row["role"]}

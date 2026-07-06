@@ -193,3 +193,43 @@ def test_update_user_status_not_found():
     response = client.patch("/api/users/999/status", json={"status": "Active"})
     assert response.status_code == 404
     app.dependency_overrides.clear()
+
+def test_login_success():
+    fake_user = {
+        "id": 1, "username": "admin", "role": "Admin", "status": "Active",
+        "password_hash": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9"
+    }
+    set_db_override(make_mock_conn(fetchrow_result=fake_user))
+    response = client.post("/api/login", json={"username": "admin", "password": "admin123"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["username"] == "admin"
+    assert data["role"] == "Admin"
+    assert "password_hash" not in data
+    app.dependency_overrides.clear()
+
+def test_login_wrong_password():
+    fake_user = {
+        "id": 1, "username": "admin", "role": "Admin", "status": "Active",
+        "password_hash": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9"
+    }
+    set_db_override(make_mock_conn(fetchrow_result=fake_user))
+    response = client.post("/api/login", json={"username": "admin", "password": "wrongpassword"})
+    assert response.status_code == 401
+    app.dependency_overrides.clear()
+
+def test_login_user_not_found():
+    set_db_override(make_mock_conn(fetchrow_result=None))
+    response = client.post("/api/login", json={"username": "nobody", "password": "test123"})
+    assert response.status_code == 401
+    app.dependency_overrides.clear()
+
+def test_login_banned_user():
+    fake_user = {
+        "id": 2, "username": "georgy", "role": "User", "status": "Banned",
+        "password_hash": "defed2e22eb3651a9e4b66334c0fafee7994aeb276f2342cecba73e291689606"
+    }
+    set_db_override(make_mock_conn(fetchrow_result=fake_user))
+    response = client.post("/api/login", json={"username": "georgy", "password": "georgy123"})
+    assert response.status_code == 403
+    app.dependency_overrides.clear()
